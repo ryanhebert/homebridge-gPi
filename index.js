@@ -7,9 +7,9 @@ module.exports = function(homebridge) {
     Service = homebridge.hap.Service;
     Characteristic = homebridge.hap.Characteristic;
 
-    homebridge.registerAccessory("homebridge-garagePi", "Irrigation-Zone", h2oValve);
-    homebridge.registerAccessory("homebridge-garagePi", "Irrigation-Controller", h2oController);
-    homebridge.registerAccessory("homebridge-garagePi", "Irrigation-SimpleMode", h2oSimpleMode);
+    homebridge.registerAccessory("homebridge-gPi", "Irrigation-Zone", h2oValve);
+    homebridge.registerAccessory("homebridge-gPi", "Irrigation-Controller", h2oController);
+    homebridge.registerAccessory("homebridge-gPi", "Irrigation-SimpleMode", h2oSimpleMode);
 }
 
 ///////////////////////////////////////////////////////////
@@ -187,8 +187,6 @@ h2oValve.prototype.getServices = function() {
   return [this.service];
 }
 
-
-
 ///////////////////////////////////////////////////////////
 //
 //    New Accessory
@@ -201,40 +199,17 @@ function h2oSimpleMode(log, config) {
   this.config = config;
   this.name = config["name"];
 
-  this.service = new Service.Valve(this.name);
+  this.service = new Service.Switch(this.name);
 
+/*
   this.service
     .setCharacteristic(Characteristic.Manufacturer, "Hebert Labs")
     .setCharacteristic(Characteristic.Model, "GaragePi")
     .setCharacteristic(Characteristic.SerialNumber, "0001");
+*/
   
   //required services
-  this.service
-    .getCharacteristic(Characteristic.Active)
-    .on('get', this.getActive.bind(this)
-  );
-
-  this.service
-    .getCharacteristic(Characteristic.InUse)
-    .on('get', this.getInUse.bind(this)
-  );
-
-  this.service
-    .getCharacteristic(Characteristic.ValveType)
-    .on('get', this.getValveType.bind(this)
-  );
-
-  this.service
-    .getCharacteristic(Characteristic.SetDuration)
-    .on('get', this.getDuration.bind(this))
-    .on('set', this.setDuration.bind(this));
-
-  this.service
-    .getCharacteristic(Characteristic.RemainingDuration)
-    .on('get', this.getRemainingDuration.bind(this))
-    .on('set', this.setRemainingDuration.bind(this));
-
-  this.service.getCharacteristic(Characteristic.IsConfigured).on('get', this.getIsConfigured.bind(this));
+  this.service.getCharacteristic(Characteristic.On).on('get', this._get.bind(this)).on('set', this._set.bind(this));
 }
 
 
@@ -244,30 +219,38 @@ function h2oSimpleMode(log, config) {
 //
 ///////////////////////////////////////////////////////////
 
-h2oSimpleMode.prototype.getActive = function(callback) {
-    callback(null, 0);
+h2oSimpleMode.prototype._set = function (state, callback){
+
+  var options = { 
+    method: 'POST',
+    url: 'http://localhost:5000/toggleSimpleStart',
+    headers: {
+      'Cache-Control': 'no-cache' 
+    } 
+  };
+
+  request(options, function (error, response, body) {
+    if (error) throw new Error(error);
+    console.log(body);
+    callback(null); });
 }
-h2oSimpleMode.prototype.getInUse = function(callback) {
-    callback(null, 0);
+
+h2oSimpleMode.prototype._get = function(callback){
+  
+    var options = { 
+    method: 'GET',
+    url: 'http://localhost:5000/getRunning',
+    headers: {
+      'Cache-Control': 'no-cache' 
+    } 
+  };
+
+  request(options, function (error, response, body) {
+    if (error) throw new Error(error);
+    console.log(body);
+    callback(null); });
 }
-h2oSimpleMode.prototype.getValveType = function(callback) {
-    callback(null, 1);
-}
-h2oSimpleMode.prototype.getDuration = function(callback) {
-    callback(null, 360);
-}
-h2oSimpleMode.prototype.setDuration = function(callback) {
-    callback(null, 360);
-}
-h2oSimpleMode.prototype.getRemainingDuration = function(callback) {
-    callback(null, 360);
-}
-h2oSimpleMode.prototype.setRemainingDuration = function(callback) {
-    callback(null, 360);
-}
-h2oSimpleMode.prototype.getIsConfigured = function(callback) {
-    callback(null, 1);
-}
+
 
 ///////////////////////////////////////////////////////////
 //
